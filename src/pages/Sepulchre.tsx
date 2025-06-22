@@ -67,7 +67,7 @@ const Sepulchre = () => {
           
           <div className="glass p-6 text-center">
             <div className="text-3xl font-light text-green-400 mb-2">
-              {boardroomStats.nextE poch}
+              {boardroomStats.nextEpoch}
             </div>
             <div className="opacity-60">Next Epoch</div>
           </div>
