@@ -11,28 +11,22 @@ const Lazarus = () => {
 
   const lpFarms = [
     {
-      id: 'reap-eth',
-      pair: 'REAP-ETH',
+      id: 'sct-hype',
+      pair: 'SCT/HYPE',
       apr: '234.7',
       tvl: '3,456,789',
       userLp: '145.50',
       multiplier: '2.5x',
+      earned: '12.45',
     },
     {
-      id: 'reap-usdc',
-      pair: 'REAP-USDC',
+      id: 'gsct-hype',
+      pair: 'gSCT/HYPE',
       apr: '189.3',
       tvl: '2,789,012',
       userLp: '89.25',
       multiplier: '2.0x',
-    },
-    {
-      id: 'eth-usdc',
-      pair: 'ETH-USDC',
-      apr: '156.8',
-      tvl: '4,123,456',
-      userLp: '234.75',
-      multiplier: '1.8x',
+      earned: '8.32',
     },
   ];
 
@@ -40,6 +34,10 @@ const Lazarus = () => {
     console.log(`Managing farm ${selectedFarm} with amount ${amount}`);
     setSelectedFarm(null);
     setAmount('');
+  };
+
+  const handleClaim = (farmPair: string, earned: string) => {
+    console.log(`Claiming ${earned} gSCT from ${farmPair} farm`);
   };
 
   return (
@@ -64,7 +62,7 @@ const Lazarus = () => {
           ref={farms.ref}
           className={`scroll-fade ${farms.isVisible ? 'visible' : ''}`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {lpFarms.map((farm) => (
               <div key={farm.id} className="pool-card">
                 <div className="flex-1">
@@ -90,7 +88,7 @@ const Lazarus = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-60">Earned</span>
-                      <span className="font-light text-green-400">12.45 REAP</span>
+                      <span className="font-light text-green-400">{farm.earned} gSCT</span>
                     </div>
                   </div>
                 </div>
@@ -102,8 +100,11 @@ const Lazarus = () => {
                   >
                     Manage
                   </button>
-                  <button className="neo-button text-center w-full opacity-80">
-                    Harvest
+                  <button 
+                    onClick={() => handleClaim(farm.pair, farm.earned)}
+                    className="neo-button text-center w-full opacity-80"
+                  >
+                    Claim
                   </button>
                 </div>
               </div>

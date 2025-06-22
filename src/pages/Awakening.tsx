@@ -12,25 +12,53 @@ const Awakening = () => {
 
   const genesisPools = [
     {
-      id: 'reap',
-      asset: 'REAP',
+      id: 'sct-hype',
+      asset: 'SCT/HYPE',
       tvl: '2,456,789',
       apr: '147.5',
       userStake: '1,250.00',
     },
     {
-      id: 'eth',
-      asset: 'ETH',
+      id: 'hype',
+      asset: 'HYPE',
       tvl: '1,234,567',
       apr: '89.2',
       userStake: '0.75',
     },
     {
-      id: 'usdc',
-      asset: 'USDC',
+      id: 'feusd',
+      asset: 'feUSD',
       tvl: '5,678,901',
       apr: '65.8',
       userStake: '2,500.00',
+    },
+    {
+      id: 'lhype',
+      asset: 'LHYPE',
+      tvl: '3,789,012',
+      apr: '112.3',
+      userStake: '850.00',
+    },
+    {
+      id: 'buddy',
+      asset: 'BUDDY',
+      tvl: '1,567,890',
+      apr: '95.7',
+      userStake: '420.50',
+    },
+    {
+      id: 'purr',
+      asset: 'PURR',
+      tvl: '2,890,123',
+      apr: '128.9',
+      userStake: '675.25',
+    },
+    {
+      id: 'ubtc',
+      asset: 'UBTC',
+      tvl: '4,321,567',
+      apr: '78.4',
+      userStake: '1.85',
     },
   ];
 
@@ -38,6 +66,10 @@ const Awakening = () => {
     console.log(`${isStakeModal ? 'Staking' : 'Unstaking'} ${stakeAmount} ${selectedPool}`);
     setSelectedPool(null);
     setStakeAmount('');
+  };
+
+  const handleClaim = (asset: string) => {
+    console.log(`Claiming rewards for ${asset}`);
   };
 
   return (
@@ -84,13 +116,13 @@ const Awakening = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <button
                     onClick={() => {
                       setSelectedPool(pool.asset);
                       setIsStakeModal(true);
                     }}
-                    className="flex-1 neo-button text-center"
+                    className="flex-1 neo-button text-center text-sm"
                   >
                     Stake
                   </button>
@@ -99,9 +131,15 @@ const Awakening = () => {
                       setSelectedPool(pool.asset);
                       setIsStakeModal(false);
                     }}
-                    className="flex-1 neo-button text-center opacity-80"
+                    className="flex-1 neo-button text-center opacity-80 text-sm"
                   >
                     Unstake
+                  </button>
+                  <button
+                    onClick={() => handleClaim(pool.asset)}
+                    className="flex-1 neo-button text-center text-sm"
+                  >
+                    Claim
                   </button>
                 </div>
               </div>
