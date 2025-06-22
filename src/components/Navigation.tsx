@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import ConnectWallet from './ConnectWallet';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +30,7 @@ const Navigation = () => {
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
       isScrolled ? 'nav-blur bg-black/20' : 'bg-transparent'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-2xl font-light tracking-tight">
             Reapurr
@@ -48,6 +49,11 @@ const Navigation = () => {
                 {item.name}
               </Link>
             ))}
+          </div>
+
+          {/* Connect Wallet Button - Desktop */}
+          <div className="hidden md:block">
+            <ConnectWallet />
           </div>
 
           {/* Mobile Menu Button */}
@@ -78,6 +84,11 @@ const Navigation = () => {
               {item.name}
             </Link>
           ))}
+          
+          {/* Connect Wallet Button - Mobile */}
+          <div className="mt-8">
+            <ConnectWallet />
+          </div>
         </div>
       </div>
     </nav>

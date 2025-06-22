@@ -21,7 +21,7 @@ const ConnectWallet = () => {
   return (
     <button
       onClick={handleConnect}
-      className="connect-wallet"
+      className="neo-button bg-green-500/20 hover:bg-green-500/30"
     >
       {isConnected ? `${address}` : 'Connect Wallet'}
     </button>
