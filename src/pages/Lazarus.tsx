@@ -59,54 +59,52 @@ const Lazarus = () => {
           </p>
         </div>
 
-        {/* LP Farms */}
+        {/* LP Farms - Square Cards Grid */}
         <div
           ref={farms.ref}
           className={`scroll-fade ${farms.isVisible ? 'visible' : ''}`}
         >
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lpFarms.map((farm) => (
-              <div key={farm.id} className="glass p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <h3 className="text-2xl font-light text-green-400">{farm.pair}</h3>
-                      <span className="px-3 py-1 bg-green-400/20 text-green-400 rounded-full text-sm">
-                        {farm.multiplier}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <div className="opacity-60 mb-1">APR</div>
-                        <div className="text-xl font-light">{farm.apr}%</div>
-                      </div>
-                      <div>
-                        <div className="opacity-60 mb-1">TVL</div>
-                        <div className="font-light">${farm.tvl}</div>
-                      </div>
-                      <div>
-                        <div className="opacity-60 mb-1">Your LP</div>
-                        <div className="font-light">{farm.userLp}</div>
-                      </div>
-                      <div>
-                        <div className="opacity-60 mb-1">Earned</div>
-                        <div className="font-light text-green-400">12.45 REAP</div>
-                      </div>
-                    </div>
+              <div key={farm.id} className="pool-card">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-light text-green-400">{farm.pair}</h3>
+                    <span className="px-3 py-1 bg-green-400/20 text-green-400 rounded-full text-sm">
+                      {farm.multiplier}
+                    </span>
                   </div>
                   
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setSelectedFarm(farm.pair)}
-                      className="neo-button px-6"
-                    >
-                      Manage
-                    </button>
-                    <button className="neo-button px-6 opacity-80">
-                      Harvest
-                    </button>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="opacity-60">APR</span>
+                      <span className="text-lg font-light text-green-400">{farm.apr}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="opacity-60">TVL</span>
+                      <span className="font-light">${farm.tvl}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="opacity-60">Your LP</span>
+                      <span className="font-light">{farm.userLp}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="opacity-60">Earned</span>
+                      <span className="font-light text-green-400">12.45 REAP</span>
+                    </div>
                   </div>
+                </div>
+                
+                <div className="flex flex-col gap-2 mt-4">
+                  <button
+                    onClick={() => setSelectedFarm(farm.pair)}
+                    className="neo-button text-center w-full"
+                  >
+                    Manage
+                  </button>
+                  <button className="neo-button text-center w-full opacity-80">
+                    Harvest
+                  </button>
                 </div>
               </div>
             ))}

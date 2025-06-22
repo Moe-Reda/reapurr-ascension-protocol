@@ -44,6 +44,7 @@
     --reapurr-primary: 120 15% 12%;
     --reapurr-accent: 120 25% 18%;
     --reapurr-glow: 120 40% 25%;
+    --reapurr-light: 120 30% 15%;
   }
 }
 
@@ -55,8 +56,21 @@
   body {
     @apply bg-background text-foreground font-light;
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, hsl(var(--reapurr-deep)) 0%, hsl(var(--reapurr-primary)) 100%);
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                hsl(var(--reapurr-light)) 0%, 
+                hsl(var(--reapurr-primary)) 50%, 
+                hsl(var(--reapurr-deep)) 100%);
+    background-size: 200% 200%;
+    background-attachment: fixed;
     min-height: 100vh;
+    transition: background-position 0.3s ease;
+  }
+
+  body.scrolled {
+    background: radial-gradient(circle at 50% 30%, 
+                hsl(var(--reapurr-light)) 0%, 
+                hsl(var(--reapurr-primary)) 40%, 
+                hsl(var(--reapurr-deep)) 100%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -74,6 +88,11 @@
     @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
   }
 
+  /* Square card style for pools */
+  .pool-card {
+    @apply glass p-6 aspect-square flex flex-col justify-between;
+  }
+
   /* Neumorphic button */
   .neo-button {
     @apply relative px-6 py-3 rounded-xl font-light tracking-wide;
@@ -88,7 +107,14 @@
     box-shadow: 
       12px 12px 20px rgba(0, 0, 0, 0.4),
       -12px -12px 20px rgba(255, 255, 255, 0.03),
-      0 0 20px hsl(var(--reapurr-glow) / 0.3);
+      0 0 25px hsl(120 60% 40% / 0.6),
+      0 0 50px hsl(120 60% 40% / 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Connect wallet button */
+  .connect-wallet {
+    @apply neo-button fixed top-6 right-6 z-50 bg-green-500/20 hover:bg-green-500/30;
   }
 
   /* Page fade in animation */
