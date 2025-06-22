@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { Card, CardContent } from '../components/ui/card';
 
 const Index = () => {
   const hero = useScrollAnimation();
@@ -120,24 +121,28 @@ const Index = () => {
 
       {/* Call to Action */}
       <section className="py-24 px-6">
-        <div className="max-w-2xl mx-auto text-center">
+        <div className="max-w-2xl mx-auto">
           <div
             ref={cta.ref}
             className={`scroll-fade ${cta.isVisible ? 'visible' : ''}`}
           >
-            <h2 className="text-4xl md:text-5xl font-light tracking-tighter mb-8">
-              Enter the <span className="text-green-400">Sepulchre</span>
-            </h2>
-            <p className="text-xl font-light opacity-70 mb-12 leading-relaxed">
-              The resurrection awaits. Step into the future of tomb finance 
-              and witness the rebirth of what was once thought impossible.
-            </p>
-            <Link
-              to="/awakening"
-              className="neo-button inline-block text-lg"
-            >
-              Begin the Awakening
-            </Link>
+            <Card className="glass border-white/10">
+              <CardContent className="p-12 text-center">
+                <h2 className="text-4xl md:text-5xl font-light tracking-tighter mb-8">
+                  Attend the <span className="text-green-400">Awakening</span>
+                </h2>
+                <p className="text-xl font-light opacity-70 mb-12 leading-relaxed">
+                  The resurrection awaits. Step into the future of tomb finance 
+                  and witness the rebirth of what was once thought impossible.
+                </p>
+                <Link
+                  to="/awakening"
+                  className="neo-button inline-block text-lg"
+                >
+                  Begin the Awakening
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
