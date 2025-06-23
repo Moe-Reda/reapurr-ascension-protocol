@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import ConnectWallet from './ConnectWallet';
+import PriceTicker from './PriceTicker';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,8 +52,9 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Connect Wallet Button - Desktop */}
-          <div className="hidden md:block">
+          {/* Price Ticker and Connect Wallet - Desktop */}
+          <div className="hidden md:flex items-center gap-6">
+            <PriceTicker />
             <ConnectWallet />
           </div>
 
@@ -85,8 +87,9 @@ const Navigation = () => {
             </Link>
           ))}
           
-          {/* Connect Wallet Button - Mobile */}
-          <div className="mt-8">
+          {/* Price Ticker and Connect Wallet - Mobile */}
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <PriceTicker />
             <ConnectWallet />
           </div>
         </div>

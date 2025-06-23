@@ -7,7 +7,6 @@ import { ExternalLink } from 'lucide-react';
 
 const Index = () => {
   const hero = useScrollAnimation();
-  const story = useScrollAnimation();
   const cta = useScrollAnimation();
   const links = useScrollAnimation();
 
@@ -26,36 +25,8 @@ const Index = () => {
           </h1>
           <p className="text-xl md:text-2xl font-nav opacity-70 max-w-2xl mx-auto leading-relaxed">
             From the ashes of fallen protocols rises Reapurr—
-            a force of renewal in the desolate tomb fork landscape.
+            a force of renewal in the desolate Algorithmic Stablecoin Protocol landscape.
           </p>
-        </div>
-      </section>
-
-      {/* The Story Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div
-            ref={story.ref}
-            className={`scroll-fade ${story.isVisible ? 'visible' : ''}`}
-          >
-            <h2 className="text-4xl md:text-5xl font-hero tracking-tighter mb-12 text-center">
-              The Story of <span className="text-green-400">Reapurr</span>
-            </h2>
-            
-            <div className="space-y-8 text-lg font-light leading-relaxed opacity-80">
-              <p>
-                In the desolate lands of forgotten DeFi, where promises of abundance had long crumbled to dust, a graveyard of abandoned tokens lay in eternal silence. The crypts were cold, the oracles silent, and the altars of yield left to rot. Yet from the shadows of these dead chains emerged a figure, cloaked in black and wielding a silver scythe: the Reapurr.
-              </p>
-              
-              <p>
-                Neither angel nor demon, he did not come to judge—but to resurrect. With each step, tokens stirred once more, pools refilled, and the echoes of long-lost smart contracts began to hum again in the ether.
-              </p>
-              
-              <p className="text-green-400 font-normal">
-                Now, he calls upon the bold. The builders, the watchers, the yield-seekers. The time has come for the Awakening—a genesis not of hope, but of reckoning. Join the Reapurr, and carve your place in a new chapter… one the fallen never saw coming.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -69,17 +40,17 @@ const Index = () => {
             <Card className="glass border-white/10">
               <CardContent className="p-12 text-center">
                 <h2 className="text-4xl md:text-5xl font-hero tracking-tighter mb-8">
-                  Attend the <span className="text-green-400">Awakening</span>
+                  Join the <span className="text-green-400">Awakening</span>
                 </h2>
                 <p className="text-xl font-nav opacity-70 mb-12 leading-relaxed">
-                  The resurrection awaits. Step into the future of tomb finance 
+                  The resurrection awaits. Step into the future of algorithmic stablecoin protocols 
                   and witness the rebirth of what was once thought impossible.
                 </p>
                 <Link
                   to="/awakening"
                   className="neo-button inline-block text-lg font-nav"
                 >
-                  Begin the Awakening
+                  Join the Awakening
                 </Link>
               </CardContent>
             </Card>

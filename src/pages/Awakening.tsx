@@ -1,9 +1,10 @@
-
 import React, { useState } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import StatsDashboard from '../components/StatsDashboard';
 
 const Awakening = () => {
   const header = useScrollAnimation();
+  const stats = useScrollAnimation();
   const pools = useScrollAnimation();
   
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
@@ -94,6 +95,14 @@ const Awakening = () => {
             Genesis pools where the resurrection begins. Stake your assets 
             and witness the birth of a new era in tomb finance.
           </p>
+        </div>
+
+        {/* Stats Dashboard */}
+        <div
+          ref={stats.ref}
+          className={`scroll-fade ${stats.isVisible ? 'visible' : ''}`}
+        >
+          <StatsDashboard />
         </div>
 
         {/* Genesis Pools */}
