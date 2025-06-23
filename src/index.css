@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=VT323&display=swap');
 
 /* Definition of the design system with Reapurr's dark green theme */
 
@@ -83,6 +84,23 @@
 }
 
 @layer components {
+  /* Typography hierarchy classes */
+  .font-hero {
+    font-family: 'Audiowide', sans-serif;
+  }
+  
+  .font-nav {
+    font-family: 'Orbitron', sans-serif;
+  }
+  
+  .font-data {
+    font-family: 'Share Tech Mono', monospace;
+  }
+  
+  .font-fx {
+    font-family: 'VT323', monospace;
+  }
+
   /* Glassmorphism effect */
   .glass {
     @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;

@@ -32,7 +32,7 @@ const Navigation = () => {
     }`}>
       <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-light tracking-tight">
+          <Link to="/" className="text-2xl font-hero tracking-tight">
             Reapurr
           </Link>
 
@@ -42,7 +42,7 @@ const Navigation = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`font-light tracking-wide transition-all duration-300 hover:text-green-400 ${
+                className={`font-nav tracking-wide transition-all duration-300 hover:text-green-400 ${
                   location.pathname === item.path ? 'text-green-400' : 'text-white/80'
                 }`}
               >
@@ -77,7 +77,7 @@ const Navigation = () => {
               key={item.path}
               to={item.path}
               onClick={() => setIsOpen(false)}
-              className={`text-2xl font-light tracking-wide transition-all duration-300 hover:text-green-400 ${
+              className={`text-2xl font-nav tracking-wide transition-all duration-300 hover:text-green-400 ${
                 location.pathname === item.path ? 'text-green-400' : 'text-white/80'
               }`}
             >

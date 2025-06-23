@@ -3,12 +3,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { Card, CardContent } from '../components/ui/card';
+import { ExternalLink } from 'lucide-react';
 
 const Index = () => {
   const hero = useScrollAnimation();
   const story = useScrollAnimation();
-  const vision = useScrollAnimation();
   const cta = useScrollAnimation();
+  const links = useScrollAnimation();
 
   return (
     <div className="min-h-screen page-enter">
@@ -18,12 +19,12 @@ const Index = () => {
           ref={hero.ref}
           className={`text-center max-w-4xl scroll-fade ${hero.isVisible ? 'visible' : ''}`}
         >
-          <h1 className="text-6xl md:text-8xl font-light tracking-tighter mb-8 leading-none">
+          <h1 className="text-6xl md:text-8xl font-hero tracking-tighter mb-8 leading-none">
             The <span className="text-green-400">Resurrection</span>
             <br />
             Has Begun
           </h1>
-          <p className="text-xl md:text-2xl font-light opacity-70 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl font-nav opacity-70 max-w-2xl mx-auto leading-relaxed">
             From the ashes of fallen protocols rises Reapurr—
             a force of renewal in the desolate tomb fork landscape.
           </p>
@@ -37,83 +38,22 @@ const Index = () => {
             ref={story.ref}
             className={`scroll-fade ${story.isVisible ? 'visible' : ''}`}
           >
-            <h2 className="text-4xl md:text-5xl font-light tracking-tighter mb-12 text-center">
+            <h2 className="text-4xl md:text-5xl font-hero tracking-tighter mb-12 text-center">
               The Story of <span className="text-green-400">Reapurr</span>
             </h2>
             
             <div className="space-y-8 text-lg font-light leading-relaxed opacity-80">
               <p>
-                In the beginning, there was promise. Tomb Finance and its forks 
-                offered a revolutionary approach to DeFi—algorithmic tokens pegged 
-                to stable assets, powered by innovative mechanics that promised 
-                sustainable yields and economic growth.
+                In the desolate lands of forgotten DeFi, where promises of abundance had long crumbled to dust, a graveyard of abandoned tokens lay in eternal silence. The crypts were cold, the oracles silent, and the altars of yield left to rot. Yet from the shadows of these dead chains emerged a figure, cloaked in black and wielding a silver scythe: the Reapurr.
               </p>
               
               <p>
-                But promises were broken. One by one, the tomb forks fell into 
-                decay. Their ecosystems withered, their communities scattered, 
-                and their innovative mechanisms lay dormant—forgotten relics 
-                of what could have been.
-              </p>
-              
-              <p>
-                Yet from this desolation, a new force emerges. Reapurr is not 
-                merely another fork—it is the resurrection itself. We have studied 
-                the failures, learned from the mistakes, and forged a protocol 
-                that transcends the limitations of its predecessors.
-              </p>
-              
-              <p>
-                Through careful design, community governance, and unwavering 
-                commitment to sustainability, Reapurr breathes life back into 
-                the tomb fork concept. We are the bridge between the old world's 
-                promise and the new world's potential.
+                Neither angel nor demon, he did not come to judge—but to resurrect. With each step, tokens stirred once more, pools refilled, and the echoes of long-lost smart contracts began to hum again in the ether.
               </p>
               
               <p className="text-green-400 font-normal">
-                The resurrection has begun. Will you join us in rewriting 
-                the future of algorithmic finance?
+                Now, he calls upon the bold. The builders, the watchers, the yield-seekers. The time has come for the Awakening—a genesis not of hope, but of reckoning. Join the Reapurr, and carve your place in a new chapter… one the fallen never saw coming.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Vision Cards */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div
-            ref={vision.ref}
-            className={`scroll-fade ${vision.isVisible ? 'visible' : ''}`}
-          >
-            <h2 className="text-4xl md:text-5xl font-light tracking-tighter mb-16 text-center">
-              Our <span className="text-green-400">Vision</span>
-            </h2>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="glass p-8 text-center">
-                <h3 className="text-2xl font-light mb-4 text-green-400">Sustainability</h3>
-                <p className="opacity-80 leading-relaxed">
-                  Built on proven economic models with safeguards against 
-                  the death spirals that claimed our predecessors.
-                </p>
-              </div>
-              
-              <div className="glass p-8 text-center">
-                <h3 className="text-2xl font-light mb-4 text-green-400">Innovation</h3>
-                <p className="opacity-80 leading-relaxed">
-                  Introducing novel mechanisms that enhance stability 
-                  while preserving the ambitious vision of algorithmic finance.
-                </p>
-              </div>
-              
-              <div className="glass p-8 text-center">
-                <h3 className="text-2xl font-light mb-4 text-green-400">Community</h3>
-                <p className="opacity-80 leading-relaxed">
-                  Governed by those who believe in the resurrection—
-                  a community united in bringing the dead back to life.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -128,21 +68,76 @@ const Index = () => {
           >
             <Card className="glass border-white/10">
               <CardContent className="p-12 text-center">
-                <h2 className="text-4xl md:text-5xl font-light tracking-tighter mb-8">
+                <h2 className="text-4xl md:text-5xl font-hero tracking-tighter mb-8">
                   Attend the <span className="text-green-400">Awakening</span>
                 </h2>
-                <p className="text-xl font-light opacity-70 mb-12 leading-relaxed">
+                <p className="text-xl font-nav opacity-70 mb-12 leading-relaxed">
                   The resurrection awaits. Step into the future of tomb finance 
                   and witness the rebirth of what was once thought impossible.
                 </p>
                 <Link
                   to="/awakening"
-                  className="neo-button inline-block text-lg"
+                  className="neo-button inline-block text-lg font-nav"
                 >
                   Begin the Awakening
                 </Link>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Links Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div
+            ref={links.ref}
+            className={`scroll-fade ${links.isVisible ? 'visible' : ''}`}
+          >
+            <h2 className="text-4xl md:text-5xl font-hero tracking-tighter mb-16 text-center">
+              <span className="text-green-400">Links</span>
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <a
+                href="https://x.com/reapurr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass p-8 text-center hover:bg-white/10 transition-all duration-300 block"
+              >
+                <ExternalLink className="w-8 h-8 mx-auto mb-4 text-green-400" />
+                <h3 className="text-2xl font-nav mb-4 text-green-400">X</h3>
+                <p className="opacity-80 leading-relaxed">
+                  Follow us on X for the latest updates and announcements.
+                </p>
+              </a>
+              
+              <a
+                href="https://t.me/reapurr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass p-8 text-center hover:bg-white/10 transition-all duration-300 block"
+              >
+                <ExternalLink className="w-8 h-8 mx-auto mb-4 text-green-400" />
+                <h3 className="text-2xl font-nav mb-4 text-green-400">Telegram</h3>
+                <p className="opacity-80 leading-relaxed">
+                  Join our Telegram community for discussions and support.
+                </p>
+              </a>
+              
+              <a
+                href="https://docs.reapurr.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass p-8 text-center hover:bg-white/10 transition-all duration-300 block"
+              >
+                <ExternalLink className="w-8 h-8 mx-auto mb-4 text-green-400" />
+                <h3 className="text-2xl font-nav mb-4 text-green-400">Docs</h3>
+                <p className="opacity-80 leading-relaxed">
+                  Read our documentation to understand the protocol better.
+                </p>
+              </a>
+            </div>
           </div>
         </div>
       </section>
