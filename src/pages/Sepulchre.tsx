@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import SepulchreStats from '../components/SepulchreStats';
 
 const Sepulchre = () => {
   const header = useScrollAnimation();
+  const stats = useScrollAnimation();
   const actions = useScrollAnimation();
   
   const [stakeAmount, setStakeAmount] = useState('');
@@ -19,7 +21,7 @@ const Sepulchre = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-12 page-enter">
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div
           ref={header.ref}
@@ -34,15 +36,23 @@ const Sepulchre = () => {
           </p>
         </div>
 
+        {/* Stats Dashboard */}
+        <div
+          ref={stats.ref}
+          className={`scroll-fade ${stats.isVisible ? 'visible' : ''}`}
+        >
+          <SepulchreStats />
+        </div>
+
         {/* Action Cards */}
         <div
           ref={actions.ref}
           className={`scroll-fade ${actions.isVisible ? 'visible' : ''}`}
         >
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* SCT Rewards Card */}
             <div className="pool-card">
-              <h3 className="text-2xl font-nav text-green-400 mb-6">SCT Rewarded</h3>
+              <h3 className="text-2xl font-nav text-green-400 mb-6">SCT</h3>
               
               <div className="space-y-4 mb-8">
                 <div className="text-center">
@@ -65,7 +75,7 @@ const Sepulchre = () => {
 
             {/* gSCT Staking Card */}
             <div className="pool-card">
-              <h3 className="text-2xl font-nav text-green-400 mb-6">gSCT Staked</h3>
+              <h3 className="text-2xl font-nav text-green-400 mb-6">gSCT</h3>
               
               <div className="space-y-4 mb-6">
                 <div className="text-center">
