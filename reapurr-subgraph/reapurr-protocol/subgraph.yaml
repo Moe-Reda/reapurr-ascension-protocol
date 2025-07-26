@@ -1,0 +1,56 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: TreasuryV2
+    network: mainnet
+    source:
+      address: "0xbC855e87C76c85256E5E788b04bc8d3Fd10CE103"
+      abi: TreasuryV2
+      startBlock: 26271894
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - BoughtBonds
+        - BurnedBonds
+        - DaoFundFunded
+        - DevFundFunded
+        - Initialized
+        - MasonryFunded
+        - OperatorTransferred
+        - OwnershipTransferred
+        - RedeemedBonds
+        - TeamFundFunded
+        - TreasuryFunded
+      abis:
+        - name: TreasuryV2
+          file: ./abis/TreasuryV2.json
+      eventHandlers:
+        - event: BoughtBonds(indexed address,uint256,uint256)
+          handler: handleBoughtBonds
+        - event: BurnedBonds(indexed address,uint256)
+          handler: handleBurnedBonds
+        - event: DaoFundFunded(uint256,uint256)
+          handler: handleDaoFundFunded
+        - event: DevFundFunded(uint256,uint256)
+          handler: handleDevFundFunded
+        - event: Initialized(indexed address,uint256)
+          handler: handleInitialized
+        - event: MasonryFunded(uint256,uint256)
+          handler: handleMasonryFunded
+        - event: OperatorTransferred(indexed address,indexed address)
+          handler: handleOperatorTransferred
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: RedeemedBonds(indexed address,uint256,uint256)
+          handler: handleRedeemedBonds
+        - event: TeamFundFunded(uint256,uint256)
+          handler: handleTeamFundFunded
+        - event: TreasuryFunded(uint256,uint256)
+          handler: handleTreasuryFunded
+      file: ./src/treasury-v-2.ts

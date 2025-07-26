@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pinger": "ts-node scripts/run-pinger.ts",
+    "pinger:build": "tsc scripts/run-pinger.ts --outDir dist --target es2020 --module commonjs && node dist/scripts/run-pinger.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -45,8 +47,10 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "ethers": "^5.8.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
+    "moment": "^2.30.1",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -59,6 +63,9 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
+    "viem": "^2.31.4",
+    "wagmi": "^2.15.6",
+    "web3": "^4.16.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -69,6 +76,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.0.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",

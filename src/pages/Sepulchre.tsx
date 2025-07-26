@@ -1,6 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useMasonryUserData, useUserTokenBalances } from '../hooks/useContracts';
+import { useAccount } from 'wagmi';
+import { getContractActions } from '../lib/contractActions';
+import { CONTRACT_ADDRESSES, parseEther } from '../lib/contracts';
 import SepulchreStats from '../components/SepulchreStats';
 
 const Sepulchre = () => {
@@ -8,15 +11,102 @@ const Sepulchre = () => {
   const stats = useScrollAnimation();
   const actions = useScrollAnimation();
   
+  const { address } = useAccount();
   const [stakeAmount, setStakeAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [approvalTx, setApprovalTx] = useState<string | null>(null);
 
-  const handleClaim = () => {
-    console.log('Claiming SCT rewards');
+  // Get real user data
+  const userData = useMasonryUserData(address);
+  const tokenBalances = useUserTokenBalances(address);
+
+  // Reset approval state when stake amount changes
+  useEffect(() => {
+    setIsApproved(false);
+    setApprovalTx(null);
+  }, [stakeAmount]);
+
+  const handleClaim = async () => {
+    if (!address) return;
+    
+    setIsProcessing(true);
+    try {
+      const contractActions = getContractActions();
+      const tx = await contractActions.claimReward();
+      setTxHash(tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await contractActions.waitForTransaction(tx);
+      console.log('Claim transaction confirmed:', receipt);
+      
+      // Reset form
+      setTxHash(null);
+    } catch (error) {
+      console.error('Failed to claim reward:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleStake = () => {
-    console.log(`Staking ${stakeAmount} gSCT`);
-    setStakeAmount('');
+  const handleApprove = async () => {
+    if (!address || !stakeAmount) return;
+    
+    setIsApproving(true);
+    try {
+      const contractActions = getContractActions();
+      
+      // Approve gSCT spending for Masonry
+      const tx = await contractActions.approveToken(
+        CONTRACT_ADDRESSES.GSCT,
+        CONTRACT_ADDRESSES.MasonryV2,
+        stakeAmount
+      );
+      setApprovalTx(tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await contractActions.waitForTransaction(tx);
+      console.log('Approval transaction confirmed:', receipt);
+      
+      setIsApproved(true);
+    } catch (error) {
+      console.error('Failed to approve:', error);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleStake = async () => {
+    if (!address || !stakeAmount) return;
+    
+    setIsProcessing(true);
+    try {
+      const contractActions = getContractActions();
+      
+      // Stake gSCT
+      const stakeTx = await contractActions.stakeGSCT(stakeAmount);
+      setTxHash(stakeTx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await contractActions.waitForTransaction(stakeTx);
+      console.log('Stake transaction confirmed:', receipt);
+      
+      // Reset form
+      setStakeAmount('');
+      setTxHash(null);
+    } catch (error) {
+      console.error('Failed to stake:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const calculateUSDValue = (amount: string, price: string) => {
+    const numAmount = Number(amount);
+    const numPrice = Number(price);
+    return (numAmount * numPrice).toFixed(2);
   };
 
   return (
@@ -56,20 +146,40 @@ const Sepulchre = () => {
               
               <div className="space-y-4 mb-8">
                 <div className="text-center">
-                  <div className="text-4xl font-data text-green-400 mb-2">134.67</div>
+                  <div className="text-4xl font-data text-green-400 mb-2">
+                    {userData.isLoading ? (
+                      <div className="animate-pulse bg-white/20 h-10 w-24 rounded mx-auto"></div>
+                    ) : (
+                      userData.earned
+                    )}
+                  </div>
                   <div className="font-nav opacity-60">Claimable SCT</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-data mb-2">$2,456.78</div>
+                  <div className="text-2xl font-data mb-2">
+                    {userData.isLoading ? (
+                      <div className="animate-pulse bg-white/20 h-8 w-20 rounded mx-auto"></div>
+                    ) : (
+                      `$${calculateUSDValue(userData.earned, '1.00')}` // Replace with actual SCT price
+                    )}
+                  </div>
                   <div className="font-nav opacity-60">USD Value</div>
                 </div>
               </div>
 
               <button
                 onClick={handleClaim}
-                className="w-full neo-button text-center font-nav"
+                disabled={!userData.canClaim || isProcessing || userData.isLoading}
+                className="w-full neo-button text-center font-nav disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Claim
+                {isProcessing ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Claiming...
+                  </div>
+                ) : (
+                  'Claim'
+                )}
               </button>
             </div>
 
@@ -79,12 +189,29 @@ const Sepulchre = () => {
               
               <div className="space-y-4 mb-6">
                 <div className="text-center">
-                  <div className="text-4xl font-data text-green-400 mb-2">2,450.00</div>
+                  <div className="text-4xl font-data text-green-400 mb-2">
+                    {userData.isLoading ? (
+                      <div className="animate-pulse bg-white/20 h-10 w-24 rounded mx-auto"></div>
+                    ) : (
+                      userData.staked
+                    )}
+                  </div>
                   <div className="font-nav opacity-60">Staked gSCT</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-data mb-2">$8,934.12</div>
+                  <div className="text-2xl font-data mb-2">
+                    {userData.isLoading ? (
+                      <div className="animate-pulse bg-white/20 h-8 w-20 rounded mx-auto"></div>
+                    ) : (
+                      `$${calculateUSDValue(userData.staked, '1.00')}` // Replace with actual gSCT price
+                    )}
+                  </div>
                   <div className="font-nav opacity-60">USD Value</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-data opacity-60">
+                    Available: {tokenBalances.gsct} gSCT
+                  </div>
                 </div>
               </div>
 
@@ -93,18 +220,64 @@ const Sepulchre = () => {
                   type="number"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
+                  disabled={isProcessing || isApproving}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data disabled:opacity-50"
                   placeholder="Enter gSCT amount"
                 />
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleApprove}
+                    disabled={isApproving || isApproved || !stakeAmount}
+                    className="flex-1 neo-button text-center font-nav disabled:opacity-50"
+                  >
+                    {isApproving ? 'Approving...' : isApproved ? 'Approved' : 'Approve'}
+                  </button>
+                  {approvalTx && (
+                    <a
+                      href={`https://testnet.purrsec.com/tx/${approvalTx}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-xs text-green-400 underline text-center"
+                    >
+                      View Tx
+                    </a>
+                  )}
+                </div>
                 <button
                   onClick={handleStake}
-                  className="w-full neo-button text-center font-nav"
+                  disabled={!stakeAmount || isProcessing || userData.isLoading || !isApproved}
+                  className="w-full neo-button text-center font-nav disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Stake
+                  {isProcessing ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Staking...
+                    </div>
+                  ) : (
+                    'Stake'
+                  )}
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Transaction Status */}
+          {(txHash || approvalTx) && (
+            <div className="mt-8 text-center space-y-4">
+              {approvalTx && (
+                <div className="glass p-4 inline-block">
+                  <div className="text-green-400 font-nav mb-2">Approval Transaction</div>
+                  <div className="font-data text-sm opacity-70 break-all">{approvalTx}</div>
+                </div>
+              )}
+              {txHash && (
+                <div className="glass p-4 inline-block">
+                  <div className="text-green-400 font-nav mb-2">Stake Transaction</div>
+                  <div className="font-data text-sm opacity-70 break-all">{txHash}</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

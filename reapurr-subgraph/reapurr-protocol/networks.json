@@ -1,0 +1,8 @@
+{
+  "mainnet": {
+    "TreasuryV2": {
+      "address": "0xbC855e87C76c85256E5E788b04bc8d3Fd10CE103",
+      "startBlock": 26271894
+    }
+  }
+}
