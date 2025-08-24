@@ -8,6 +8,7 @@ import { buyBonds, redeemBonds, getContractActions } from '../lib/contractAction
 const Purgatory = () => {
   const header = useScrollAnimation();
   const bonds = useScrollAnimation();
+  const activity = useScrollAnimation();
   
   const { address: userAddress } = useAccount();
   const [purchaseAmount, setPurchaseAmount] = useState('');
@@ -98,9 +99,10 @@ const Purgatory = () => {
       console.log('Bond purchase transaction confirmed:', receipt);
       
       setPurchaseAmount('');
-      setTxHash(null);
+      setIsApproved(false);
+      setApprovalTx(null);
     } catch (error) {
-      console.error('Bond purchase failed:', error);
+      console.error('Failed to purchase bonds:', error);
     } finally {
       setIsLoading(false);
     }
@@ -138,6 +140,7 @@ const Purgatory = () => {
     try {
       // Use Treasury's price as target price (same as Treasury's getSCTPrice())
       const targetPrice = sctPrice.data;
+
       const tx = await redeemBonds(redeemAmount, targetPrice.toString());
       setTxHash(tx.hash);
       
@@ -146,174 +149,181 @@ const Purgatory = () => {
       console.log('Bond redemption transaction confirmed:', receipt);
       
       setRedeemAmount('');
-      setTxHash(null);
+      setIsRedeemApproved(false);
+      setRedeemApprovalTx(null);
     } catch (error) {
-      console.error('Bond redemption failed:', error);
+      console.error('Failed to redeem bonds:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 page-enter">
-      <div className="max-w-4xl mx-auto px-6">
-        {/* Header */}
-        <div
-          ref={header.ref}
-          className={`text-center mb-16 scroll-fade ${header.isVisible ? 'visible' : ''}`}
-        >
-          <h1 className="text-5xl md:text-6xl font-hero tracking-tighter mb-6">
-            <span className="text-green-400">Purgatory</span>
-          </h1>
-          <p className="text-xl font-nav opacity-70 max-w-2xl mx-auto">
-            A place of transformation where assets are committed to the fire, 
-            emerging reborn as protocol bonds with enhanced value.
-          </p>
+    <div className="min-h-screen page-enter">
+      {/* Header */}
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div
+            ref={header.ref}
+            className={`text-center scroll-fade ${header.isVisible ? 'visible' : ''}`}
+          >
+            <h1 className="text-6xl md:text-8xl font-hero tracking-tighter mb-8">
+              <span className="text-green-400">Purgatory</span>
+            </h1>
+            <p className="text-xl md:text-2xl font-nav opacity-70 max-w-3xl mx-auto leading-relaxed">
+              The realm of bonds and redemptions. Purchase bonds when SCT is above peg, 
+              redeem them when it's below. Navigate the cycles of expansion and contraction.
+            </p>
+          </div>
         </div>
+      </section>
 
-        {/* Bond Cards */}
-        <div
-          ref={bonds.ref}
-          className={`scroll-fade ${bonds.isVisible ? 'visible' : ''}`}
-        >
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Purchase bSCT Card */}
-            <div className="pool-card">
-              <div className="flex items-center gap-3 mb-6">
-                <img 
-                  src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center" 
-                  alt="bSCT"
-                  className="w-8 h-8 rounded-full"
-                />
-                <h3 className="text-2xl font-nav text-green-400">Purchase bSCT</h3>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">Current Treasury Price</span>
-                  <span className="font-data">
-                    {bondData.isLoading ? '...' : `${bondData.sctPrice.toFixed(3)} SCT`}
-                  </span>
+      {/* Bonds Section */}
+      <section className="py-16 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div
+            ref={bonds.ref}
+            className={`scroll-fade ${bonds.isVisible ? 'visible' : ''}`}
+          >
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Buy Bonds */}
+              <div className="glass p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <img 
+                    src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center" 
+                    alt="SCT"
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <h3 className="text-2xl font-nav text-green-400">Buy Bonds</h3>
                 </div>
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">ROI</span>
-                  <span className="text-green-400 font-data">
-                    {bondData.isLoading ? '...' : `+${(bondData.discountRate * 100).toFixed(1)}%`}
-                  </span>
+                
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Your SCT</span>
+                    <span className="font-data">
+                      {bondData.isLoading ? '...' : bondData.sctBalance.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Current Treasury Price</span>
+                    <span className="text-green-400 font-data">
+                      {bondData.isLoading ? '...' : `${bondData.sctPrice.toFixed(3)} SCT`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Discount</span>
+                    <span className="font-fx">
+                      {bondData.isLoading ? '...' : `-${(bondData.discountRate * 100).toFixed(1)}%`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">Your SCT</span>
-                  <span className="font-data">
-                    {bondData.isLoading ? '...' : bondData.sctBalance.toFixed(2)}
-                  </span>
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <input
-                  type="number"
-                  value={purchaseAmount}
-                  onChange={(e) => setPurchaseAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
-                  placeholder="Enter SCT amount"
-                  disabled={isLoading || isApproving || !userAddress}
-                />
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleApprove}
-                    disabled={isApproving || isApproved || !purchaseAmount}
-                    className="flex-1 neo-button text-center font-nav disabled:opacity-50"
-                  >
-                    {isApproving ? 'Approving...' : isApproved ? 'Approved' : 'Approve'}
-                  </button>
-                  {approvalTx && (
-                    <a
-                      href={`https://testnet.purrsec.com/tx/${approvalTx}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-xs text-green-400 underline text-center"
+                <div className="space-y-4">
+                  <input
+                    type="number"
+                    value={purchaseAmount}
+                    onChange={(e) => setPurchaseAmount(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
+                    placeholder="Enter SCT amount"
+                    disabled={isLoading || isApproving || !userAddress}
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleApprove}
+                      disabled={isApproving || isApproved || !purchaseAmount}
+                      className="flex-1 neo-button text-center font-nav disabled:opacity-50"
                     >
-                      View Tx
-                    </a>
-                  )}
-                </div>
-                <button
-                  onClick={handlePurchase}
-                  disabled={!purchaseAmount || isLoading || !userAddress || !isApproved}
-                  className="w-full neo-button text-center font-nav disabled:opacity-50"
-                >
-                  {isLoading ? 'Processing...' : 'Purchase Bond'}
-                </button>
-              </div>
-            </div>
-
-            {/* Redeem bSCT Card */}
-            <div className="pool-card">
-              <div className="flex items-center gap-3 mb-6">
-                <img 
-                  src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center" 
-                  alt="bSCT"
-                  className="w-8 h-8 rounded-full"
-                />
-                <h3 className="text-2xl font-nav text-green-400">Redeem bSCT</h3>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">Your bSCT</span>
-                  <span className="font-data">
-                    {bondData.isLoading ? '...' : bondData.bsctBalance.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">Current Treasury Price</span>
-                  <span className="text-green-400 font-data">
-                    {bondData.isLoading ? '...' : `${bondData.sctPrice.toFixed(3)} SCT`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="opacity-70 font-nav">Premium</span>
-                  <span className="font-fx">
-                    {bondData.isLoading ? '...' : `+${(bondData.premiumRate * 100).toFixed(1)}%`}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <input
-                  type="number"
-                  value={redeemAmount}
-                  onChange={(e) => setRedeemAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
-                  placeholder="Enter bSCT amount"
-                  disabled={isLoading || isRedeemApproving || !userAddress}
-                />
-                <div className="flex gap-3">
+                      {isApproving ? 'Approving...' : isApproved ? 'Approved' : 'Approve'}
+                    </button>
+                    {approvalTx && (
+                      <a
+                        href={`https://testnet.purrsec.com/tx/${approvalTx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-xs text-green-400 underline text-center"
+                      >
+                        View Tx
+                      </a>
+                    )}
+                  </div>
                   <button
-                    onClick={handleRedeemApprove}
-                    disabled={isRedeemApproving || isRedeemApproved || !redeemAmount}
-                    className="flex-1 neo-button text-center font-nav disabled:opacity-50"
+                    onClick={handlePurchase}
+                    disabled={!purchaseAmount || isLoading || !userAddress || !isApproved}
+                    className="w-full neo-button text-center font-nav disabled:opacity-50"
                   >
-                    {isRedeemApproving ? 'Approving...' : isRedeemApproved ? 'Approved' : 'Approve'}
+                    {isLoading ? 'Processing...' : 'Buy Bond'}
                   </button>
-                  {redeemApprovalTx && (
-                    <a
-                      href={`https://testnet.purrsec.com/tx/${redeemApprovalTx}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-xs text-green-400 underline text-center"
-                    >
-                      View Tx
-                    </a>
-                  )}
                 </div>
-                <button
-                  onClick={handleRedeem}
-                  disabled={!redeemAmount || isLoading || !userAddress || !isRedeemApproved}
-                  className="w-full neo-button text-center font-nav disabled:opacity-50"
-                >
-                  {isLoading ? 'Processing...' : 'Redeem Bond'}
-                </button>
+              </div>
+
+              {/* Redeem Bonds */}
+              <div className="glass p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <img 
+                    src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center" 
+                    alt="bSCT"
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <h3 className="text-2xl font-nav text-green-400">Redeem bSCT</h3>
+                </div>
+                
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Your bSCT</span>
+                    <span className="font-data">
+                      {bondData.isLoading ? '...' : bondData.bsctBalance.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Current Treasury Price</span>
+                    <span className="text-green-400 font-data">
+                      {bondData.isLoading ? '...' : `${bondData.sctPrice.toFixed(3)} SCT`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-70 font-nav">Premium</span>
+                    <span className="font-fx">
+                      {bondData.isLoading ? '...' : `+${(bondData.premiumRate * 100).toFixed(1)}%`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <input
+                    type="number"
+                    value={redeemAmount}
+                    onChange={(e) => setRedeemAmount(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
+                    placeholder="Enter bSCT amount"
+                    disabled={isLoading || isRedeemApproving || !userAddress}
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleRedeemApprove}
+                      disabled={isRedeemApproving || isRedeemApproved || !redeemAmount}
+                      className="flex-1 neo-button text-center font-nav disabled:opacity-50"
+                    >
+                      {isRedeemApproving ? 'Approving...' : isRedeemApproved ? 'Approved' : 'Approve'}
+                    </button>
+                    {redeemApprovalTx && (
+                      <a
+                        href={`https://testnet.purrsec.com/tx/${redeemApprovalTx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-xs text-green-400 underline text-center"
+                      >
+                        View Tx
+                      </a>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleRedeem}
+                    disabled={!redeemAmount || isLoading || !userAddress || !isRedeemApproved}
+                    className="w-full neo-button text-center font-nav disabled:opacity-50"
+                  >
+                    {isLoading ? 'Processing...' : 'Redeem Bond'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -342,7 +352,7 @@ const Purgatory = () => {
             )}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

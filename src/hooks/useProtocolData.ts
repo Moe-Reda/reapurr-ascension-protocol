@@ -1,10 +1,24 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAccount, useReadContract } from 'wagmi'
-import { CONTRACT_ADDRESSES, ERC20_ABI, STAKING_ABI, TREASURY_ABI } from '@/lib/contracts'
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '@/lib/contracts'
 import { formatUnits } from 'ethers/lib/utils'
+import { useEffect, useState } from 'react'
 
 // Price fetching hook (you'll need to implement price oracle or DEX integration)
 export const useTokenPrice = (tokenAddress: string) => {
+  const [isVisible, setIsVisible] = useState(!document.hidden);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return useQuery({
     queryKey: ['tokenPrice', tokenAddress],
     queryFn: async () => {
@@ -12,7 +26,8 @@ export const useTokenPrice = (tokenAddress: string) => {
       // This could be from a DEX, price oracle, or API
       return 1.0 // Placeholder
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: isVisible ? 30000 : false, // Only refetch when visible
+    refetchIntervalInBackground: false, // Don't refetch in background
   })
 }
 
@@ -22,7 +37,7 @@ export const useUserBalance = (tokenAddress: string) => {
   
   const { data: balance } = useReadContract({
     address: tokenAddress as `0x${string}`,
-    abi: ERC20_ABI,
+    abi: CONTRACT_ABIS.ERC20,
     functionName: 'balanceOf',
     args: [address as `0x${string}`],
     query: {
@@ -32,7 +47,7 @@ export const useUserBalance = (tokenAddress: string) => {
 
   const { data: decimals } = useReadContract({
     address: tokenAddress as `0x${string}`,
-    abi: ERC20_ABI,
+    abi: CONTRACT_ABIS.ERC20,
     functionName: 'decimals',
     query: {
       enabled: !!address,
@@ -51,9 +66,9 @@ export const useStakingData = () => {
   const { address } = useAccount()
   
   const { data: stakeInfo } = useReadContract({
-    address: CONTRACT_ADDRESSES.STAKING as `0x${string}`,
-    abi: STAKING_ABI,
-    functionName: 'stakeInfo',
+    address: CONTRACT_ADDRESSES.MasonryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.MasonryV2,
+    functionName: 'balanceOf',
     args: [address as `0x${string}`],
     query: {
       enabled: !!address,
@@ -61,75 +76,78 @@ export const useStakingData = () => {
   })
 
   const { data: totalStaked } = useReadContract({
-    address: CONTRACT_ADDRESSES.STAKING as `0x${string}`,
-    abi: STAKING_ABI,
-    functionName: 'totalStaked',
+    address: CONTRACT_ADDRESSES.MasonryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.MasonryV2,
+    functionName: 'totalSupply',
   })
 
-  const { data: rewardRate } = useReadContract({
-    address: CONTRACT_ADDRESSES.STAKING as `0x${string}`,
-    abi: STAKING_ABI,
-    functionName: 'rewardRate',
+  const { data: earned } = useReadContract({
+    address: CONTRACT_ADDRESSES.MasonryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.MasonryV2,
+    functionName: 'earned',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: !!address,
+    },
   })
 
   return {
-    stakedAmount: stakeInfo && stakeInfo[0] ? formatUnits(stakeInfo[0] as bigint, 18) : '0',
-    pendingRewards: stakeInfo && stakeInfo[1] ? formatUnits(stakeInfo[1] as bigint, 18) : '0',
-    lastClaimTime: stakeInfo && stakeInfo[2] ? Number(stakeInfo[2]) : 0,
+    stakedAmount: stakeInfo ? formatUnits(stakeInfo as bigint, 18) : '0',
+    pendingRewards: earned ? formatUnits(earned as bigint, 18) : '0',
+    lastClaimTime: 0, // Not available in MasonryV2
     totalStaked: totalStaked ? formatUnits(totalStaked as bigint, 18) : '0',
-    rewardRate: rewardRate ? formatUnits(rewardRate as bigint, 18) : '0',
+    rewardRate: 0, // Not available in MasonryV2
   }
 }
 
 // Treasury data hook
 export const useTreasuryData = () => {
-  const { data: totalReserves } = useReadContract({
-    address: CONTRACT_ADDRESSES.TREASURY as `0x${string}`,
-    abi: TREASURY_ABI,
-    functionName: 'totalReserves',
+  const { data: sctPrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.TreasuryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.TreasuryV2,
+    functionName: 'getSCTPrice',
   })
 
-  const { data: totalDebt } = useReadContract({
-    address: CONTRACT_ADDRESSES.TREASURY as `0x${string}`,
-    abi: TREASURY_ABI,
-    functionName: 'totalDebt',
+  const { data: bsctPrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.TreasuryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.TreasuryV2,
+    functionName: 'getBSCTPrice',
   })
 
-  const { data: backingRatio } = useReadContract({
-    address: CONTRACT_ADDRESSES.TREASURY as `0x${string}`,
-    abi: TREASURY_ABI,
-    functionName: 'backingRatio',
+  const { data: bondDiscountRate } = useReadContract({
+    address: CONTRACT_ADDRESSES.TreasuryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.TreasuryV2,
+    functionName: 'getBondDiscountRate',
   })
 
-  const { data: bondingDiscount } = useReadContract({
-    address: CONTRACT_ADDRESSES.TREASURY as `0x${string}`,
-    abi: TREASURY_ABI,
-    functionName: 'bondingDiscount',
+  const { data: bondPremiumRate } = useReadContract({
+    address: CONTRACT_ADDRESSES.TreasuryV2 as `0x${string}`,
+    abi: CONTRACT_ABIS.TreasuryV2,
+    functionName: 'getBondPremiumRate',
   })
 
   return {
-    totalReserves: totalReserves ? formatUnits(totalReserves as bigint, 6) : '0', // Assuming USDC decimals
-    totalDebt: totalDebt ? formatUnits(totalDebt as bigint, 18) : '0',
-    backingRatio: backingRatio ? formatUnits(backingRatio as bigint, 18) : '0',
-    bondingDiscount: bondingDiscount ? formatUnits(bondingDiscount as bigint, 18) : '0',
+    sctPrice: sctPrice ? formatUnits(sctPrice as bigint, 18) : '0',
+    bsctPrice: bsctPrice ? formatUnits(bsctPrice as bigint, 18) : '0',
+    bondDiscountRate: bondDiscountRate ? formatUnits(bondDiscountRate as bigint, 18) : '0',
+    bondPremiumRate: bondPremiumRate ? formatUnits(bondPremiumRate as bigint, 18) : '0',
   }
 }
 
 // Protocol overview hook
 export const useProtocolOverview = () => {
   const { data: sctPrice } = useTokenPrice(CONTRACT_ADDRESSES.SCT)
-  const { data: gsctPrice } = useTokenPrice(CONTRACT_ADDRESSES.gSCT)
-  const { totalReserves, totalDebt, backingRatio } = useTreasuryData()
+  const { data: gsctPrice } = useTokenPrice(CONTRACT_ADDRESSES.GSCT)
+  const { sctPrice: treasurySctPrice, bsctPrice } = useTreasuryData()
   const { totalStaked } = useStakingData()
 
   return {
     sctPrice,
     gsctPrice,
-    totalReserves,
-    totalDebt,
-    backingRatio,
+    treasurySctPrice,
+    bsctPrice,
     totalStaked,
-    marketCap: sctPrice && totalDebt ? parseFloat(sctPrice.toString()) * parseFloat(totalDebt) : 0,
-    treasuryValue: totalReserves ? parseFloat(totalReserves) : 0,
+    marketCap: sctPrice && treasurySctPrice ? parseFloat(sctPrice.toString()) * parseFloat(treasurySctPrice) : 0,
+    treasuryValue: treasurySctPrice ? parseFloat(treasurySctPrice) : 0,
   }
 } 

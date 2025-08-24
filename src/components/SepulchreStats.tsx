@@ -1,5 +1,6 @@
 import React from 'react';
 import { useProtocolStats, useMasonryEpoch, useMasonryNextEpochPoint, useMasonryTotalSupply, useTreasurySCTPrice } from '../hooks/useContracts';
+import { useStakingStats } from '../hooks/useSubgraph';
 import { formatEther } from '../lib/contracts';
 
 const SepulchreStats = () => {
@@ -9,6 +10,9 @@ const SepulchreStats = () => {
   const nextEpochPoint = useMasonryNextEpochPoint();
   const totalStaked = useMasonryTotalSupply();
   const sctPrice = useTreasurySCTPrice();
+  
+  // Get subgraph data
+  const { stats: stakingStats, loading: stakingLoading } = useStakingStats();
 
   // Calculate time until next epoch
   const getTimeUntilNextEpoch = () => {
@@ -44,8 +48,23 @@ const SepulchreStats = () => {
     return annualAPR.toFixed(2);
   };
 
+  // Get last seigniorage from subgraph
+  const getLastSeigniorage = () => {
+    if (!stakingStats.recentRewards.length) return '0';
+    const lastReward = stakingStats.recentRewards[0];
+    return formatEther(lastReward.reward);
+  };
+
+  // Calculate peg percentage (assuming 1 USD peg)
+  const calculatePegPercentage = (price: string) => {
+    const priceNum = parseFloat(price.replace('$', ''));
+    const pegPercentage = (priceNum / 1) * 100;
+    return `${pegPercentage.toFixed(2)}% of peg`;
+  };
+
   // Loading state
-  const isLoading = protocolStats.isLoading || epoch.isLoading || nextEpochPoint.isLoading || totalStaked.isLoading || sctPrice.isLoading;
+  const isLoading = protocolStats.isLoading || epoch.isLoading || nextEpochPoint.isLoading || 
+                   totalStaked.isLoading || sctPrice.isLoading || stakingLoading;
 
   if (isLoading) {
     return (
@@ -65,18 +84,23 @@ const SepulchreStats = () => {
     );
   }
 
+  const currentPrice = sctPrice.data ? formatEther(sctPrice.data as bigint) : '0';
+  const lastSeigniorage = getLastSeigniorage();
+  const lastSeigniorageUSD = sctPrice.data ? 
+    (parseFloat(lastSeigniorage) * parseFloat(currentPrice)).toFixed(2) : '0.00';
+
   const stats = {
     currentEpoch: epoch.data ? Number(epoch.data).toString() : '0',
     nextEpochTime: getTimeUntilNextEpoch(),
     totalStaked: totalStaked.data ? formatEther(totalStaked.data as bigint) : '0',
     totalStakedUSD: totalStaked.data && sctPrice.data ? 
       `$${(Number(formatEther(totalStaked.data as bigint)) * Number(formatEther(sctPrice.data as bigint))).toFixed(2)}` : '$0.00',
-    lastSeigniorage: '0', // This would need to be fetched from Treasury events
-    lastSeigniorageUSD: '0.00',
-    lastTwap: sctPrice.data ? `$${formatEther(sctPrice.data as bigint)}` : '$0.00',
-    twapPeg: '0% of peg', // Calculate peg percentage
-    currentPrice: sctPrice.data ? `$${formatEther(sctPrice.data as bigint)}` : '$0.00',
-    pricePeg: '0% of peg', // Calculate peg percentage
+    lastSeigniorage: `${lastSeigniorage} SCT`,
+    lastSeigniorageUSD: `$${lastSeigniorageUSD}`,
+    lastTwap: `$${currentPrice}`,
+    twapPeg: calculatePegPercentage(currentPrice),
+    currentPrice: `$${currentPrice}`,
+    pricePeg: calculatePegPercentage(currentPrice),
     currentAPR: `${calculateAPR()}%`,
     dailyAPR: `${(Number(calculateAPR()) / 365).toFixed(2)}%`
   };
@@ -120,7 +144,7 @@ const SepulchreStats = () => {
             <div className="w-4 h-4 rounded-full bg-yellow-400"></div>
             <span className="font-nav text-sm opacity-80">Last Seigniorage</span>
           </div>
-          <div className="font-data text-2xl text-yellow-400">{stats.lastSeigniorage} SCT</div>
+          <div className="font-data text-2xl text-yellow-400">{stats.lastSeigniorage}</div>
           <div className="font-nav text-xs opacity-60">{stats.lastSeigniorageUSD} USD</div>
         </div>
 

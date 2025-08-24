@@ -10,9 +10,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "pinger": "ts-node scripts/run-pinger.ts",
-    "pinger:build": "tsc scripts/run-pinger.ts --outDir dist --target es2020 --module commonjs && node dist/scripts/run-pinger.js"
+    "pinger:build": "tsc scripts/run-pinger.ts --outDir dist --target es2020 --module commonjs && node dist/scripts/run-pinger.js",
+    "test:pricing": "ts-node scripts/test-token-pricing.ts"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.8",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -48,6 +50,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "ethers": "^5.8.0",
+    "graphql": "^16.11.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "moment": "^2.30.1",
@@ -87,5 +90,6 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

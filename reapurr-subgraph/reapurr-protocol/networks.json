@@ -1,4 +1,22 @@
 {
+  "hyperevm-testnet": {
+    "TreasuryV2": {
+      "address": "0xbC855e87C76c85256E5E788b04bc8d3Fd10CE103",
+      "startBlock": 26271894
+    },
+    "MasonryV2": {
+      "address": "0x771Ff7409e84952c79bD930BBd396617335e0873",
+      "startBlock": 25928602
+    },
+    "SCTGenesisRewardPool": {
+      "address": "0x1D8688617590548250E4327930DE826668e65b73",
+      "startBlock": 25928602
+    },
+    "GSCTRewardPool": {
+      "address": "0x97CFC3285797545A25BAF4b4E2dDEdca863AEf68",
+      "startBlock": 26165710
+    }
+  },
   "mainnet": {
     "TreasuryV2": {
       "address": "0xbC855e87C76c85256E5E788b04bc8d3Fd10CE103",

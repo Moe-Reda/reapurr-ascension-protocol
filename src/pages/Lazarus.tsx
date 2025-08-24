@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useAccount } from 'wagmi';
-import { 
-  useGSCTPoolUserInfo, 
-  useGSCTPoolPendingShare, 
-  useGSCTPoolInfo, 
-  useTokenBalance 
-} from '../hooks/useContracts';
+import { useOptimizedGSCTPoolData } from '../hooks/useOptimizedGSCTPoolData';
 import { CONTRACT_ADDRESSES } from '../lib/contracts';
 import { stakeInGSCTPool, withdrawFromGSCTPool, claimGSCTRewards, getContractActions } from '../lib/contractActions';
+import { formatTVL } from '../lib/utils';
 
 const Lazarus = () => {
   const header = useScrollAnimation();
@@ -17,60 +13,35 @@ const Lazarus = () => {
   const { address: userAddress } = useAccount();
   const [selectedFarm, setSelectedFarm] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const contractActions = getContractActions();
   const [isApproved, setIsApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalTx, setApprovalTx] = useState<string | null>(null);
 
-  // GSCT Reward Pool farms - using the single GSCTRewardPool contract
-  const lpFarms = [
-    {
-      id: 'sct-hype',
-      pair: 'SCT/HYPE',
-      poolAddress: CONTRACT_ADDRESSES.GSCTRewardPool,
-      lpTokenAddress: '0x95086e54952C1EaE95d0381c1bE801728ed64d83', // SCT-HYPE LP from contract
-      pid: 0, // Pool ID 0 for SCT-HYPE
-      multiplier: '2.5x',
-      tokenImage: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center',
-    },
-    {
-      id: 'gsct-hype',
-      pair: 'gSCT/HYPE',
-      poolAddress: CONTRACT_ADDRESSES.GSCTRewardPool,
-      lpTokenAddress: '0x162991e2926089D493beB9458Bd1f94db2F5efB1', // GSCT-HYPE LP from contract
-      pid: 1, // Pool ID 1 for GSCT-HYPE
-      multiplier: '2.0x',
-      tokenImage: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=64&h=64&fit=crop&crop=center',
-    },
-  ];
-
-  // Fetch real data for each farm using GSCT pool hooks
-  const farmData = lpFarms.map(farm => {
-    const userInfo = useGSCTPoolUserInfo(farm.poolAddress, farm.pid, userAddress);
-    const pendingGSCT = useGSCTPoolPendingShare(farm.poolAddress, farm.pid, userAddress);
-    const poolInfo = useGSCTPoolInfo(farm.poolAddress, farm.pid);
-    const lpBalance = useTokenBalance(farm.lpTokenAddress, userAddress);
-
-    return {
-      ...farm,
-      userLp: userInfo.data && userInfo.data[0] ? Number(userInfo.data[0]) / 1e18 : 0,
-      earned: pendingGSCT.data ? Number(pendingGSCT.data) / 1e18 : 0,
-      totalLp: poolInfo.data && poolInfo.data[0] ? Number(poolInfo.data[0]) / 1e18 : 0,
-      lpTokenBalance: lpBalance.data ? Number(lpBalance.data) / 1e18 : 0,
-      isLoading: userInfo.isLoading || pendingGSCT.isLoading || poolInfo.isLoading || lpBalance.isLoading,
-    };
-  });
+  // Use optimized GSCT pool data hook for consistent TVL calculation
+  const { pools: farmData, isLoading: farmsLoading, error: farmsError, isVisible, isPolling } = useOptimizedGSCTPoolData();
 
   const handleFarmAction = async () => {
     if (!selectedFarm || !amount || !userAddress) return;
     
     setIsLoading(true);
     try {
-      const farm = lpFarms.find(f => f.pair === selectedFarm);
+      const farm = farmData.find(f => f.pair === selectedFarm);
       if (!farm) return;
 
-      await stakeInGSCTPool(farm.poolAddress, farm.pid, amount);
+      const tx = await stakeInGSCTPool(farm.poolAddress, farm.pid, amount);
+      
+      // Wait for transaction receipt and immediately refresh data
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        console.log('Transaction successful, refreshing data...');
+        // Force immediate data refresh by triggering a page reload
+        // This ensures all hooks refetch their data
+        window.location.reload();
+      }
       
       setSelectedFarm(null);
       setAmount('');
@@ -86,9 +57,40 @@ const Lazarus = () => {
     
     setIsLoading(true);
     try {
-      await claimGSCTRewards(poolAddress, pid);
+      const tx = await claimGSCTRewards(poolAddress, pid);
+      
+      // Wait for transaction receipt and immediately refresh data
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        console.log('Claim successful, refreshing data...');
+        // Force immediate data refresh
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Claim failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWithdraw = async (poolAddress: string, pid: number, amount: string) => {
+    if (!userAddress || !amount) return;
+    
+    setIsLoading(true);
+    try {
+      const tx = await withdrawFromGSCTPool(poolAddress, pid, amount);
+      
+      // Wait for transaction receipt and immediately refresh data
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        console.log('Withdraw successful, refreshing data...');
+        // Force immediate data refresh
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Withdraw failed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +101,7 @@ const Lazarus = () => {
     if (!selectedFarm || !amount || !userAddress) return;
     setIsApproving(true);
     try {
-      const farm = lpFarms.find(f => f.pair === selectedFarm);
+      const farm = farmData.find(f => f.pair === selectedFarm);
       if (!farm || !farm.lpTokenAddress || !farm.poolAddress) {
         throw new Error('Farm or addresses not set ' + farm.lpTokenAddress + ' ' + farm.poolAddress);
       }
@@ -122,7 +124,12 @@ const Lazarus = () => {
   useEffect(() => {
     setIsApproved(false);
     setApprovalTx(null);
+    setWithdrawAmount('');
   }, [selectedFarm, amount]);
+
+  // Check if any operations are in progress
+  const hasPendingOperations = false; // No batch operations in Lazarus yet
+  const isDataLoading = farmsLoading || isLoading || hasPendingOperations;
 
   return (
     <div className="min-h-screen pt-24 pb-12 page-enter">
@@ -139,6 +146,17 @@ const Lazarus = () => {
             Provide liquidity and earn rewards as we restore life to the ecosystem. 
             Your LP tokens become the lifeblood of the resurrection.
           </p>
+        </div>
+
+        {/* Status Display */}
+        <div className="mb-6 flex gap-4">
+          {farmsError && (
+            <div className="glass p-4 border border-red-400/20 flex-1">
+              <p className="text-red-400 text-sm">
+                Error loading farm data: {farmsError}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* LP Farms - Square Cards Grid */}
@@ -159,22 +177,19 @@ const Lazarus = () => {
                       />
                       <h3 className="text-2xl font-nav text-green-400">{farm.pair}</h3>
                     </div>
-                    <span className="px-3 py-1 bg-green-400/20 text-green-400 rounded-full text-sm font-nav">
-                      {farm.multiplier}
-                    </span>
                   </div>
                   
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="opacity-60 font-nav">APR</span>
                       <span className="text-lg font-data text-green-400">
-                        {farm.isLoading ? '...' : 'APR'}%
+                        {farm.isLoading ? '...' : farm.apr > 0 ? farm.apr.toFixed(2) : '0.00'}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-60 font-nav">TVL</span>
                       <span className="font-data">
-                        {farm.isLoading ? '...' : `$${(farm.totalLp * 2.5).toLocaleString()}`}
+                        {formatTVL(farm.totalPoolTVL, farm.isLoading)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -203,7 +218,7 @@ const Lazarus = () => {
                   <button 
                     onClick={() => handleClaim(farm.poolAddress, farm.pid)}
                     disabled={!userAddress || farm.isLoading || farm.earned <= 0}
-                    className="neo-button text-center w-full opacity-80 font-nav disabled:opacity-50"
+                    className="neo-button text-center w-full font-nav opacity-100 disabled:opacity-50"
                   >
                     Claim
                   </button>
@@ -231,7 +246,7 @@ const Lazarus = () => {
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
                   placeholder="Enter LP amount"
-                  disabled={isLoading || isApproving}
+                  disabled={isDataLoading || isApproving}
                 />
               </div>
               <div className="flex gap-3">
@@ -258,18 +273,45 @@ const Lazarus = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedFarm(null)}
-                disabled={isLoading}
+                disabled={isDataLoading}
                 className="flex-1 neo-button opacity-60 text-center font-nav disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleFarmAction}
-                disabled={!amount || isLoading || !isApproved}
+                disabled={!amount || isDataLoading || !isApproved}
                 className="flex-1 neo-button text-center font-nav disabled:opacity-50"
               >
-                {isLoading ? 'Processing...' : 'Deposit'}
+                {isDataLoading ? 'Processing...' : 'Deposit'}
               </button>
+            </div>
+            
+            {/* Withdraw Section */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <h4 className="text-sm opacity-70 mb-3 font-nav">Withdraw LP</h4>
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-data"
+                  placeholder="Enter amount to withdraw"
+                  disabled={isDataLoading}
+                />
+                <button
+                  onClick={() => {
+                    const farm = farmData.find(f => f.pair === selectedFarm);
+                    if (farm) {
+                      handleWithdraw(farm.poolAddress, farm.pid, withdrawAmount);
+                    }
+                  }}
+                  disabled={!withdrawAmount || isDataLoading}
+                  className="neo-button text-center font-nav disabled:opacity-50 px-6"
+                >
+                  {isDataLoading ? 'Processing...' : 'Withdraw'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

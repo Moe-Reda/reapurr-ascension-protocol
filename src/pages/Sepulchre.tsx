@@ -185,7 +185,19 @@ const Sepulchre = () => {
 
             {/* gSCT Staking Card */}
             <div className="pool-card">
-              <h3 className="text-2xl font-nav text-green-400 mb-6">gSCT</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-nav text-green-400">gSCT</h3>
+                {isApproved && approvalTx && (
+                  <a
+                    href={`https://testnet.purrsec.com/tx/${approvalTx}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-green-400 underline"
+                  >
+                    View Tx
+                  </a>
+                )}
+              </div>
               
               <div className="space-y-4 mb-6">
                 <div className="text-center">
@@ -232,16 +244,6 @@ const Sepulchre = () => {
                   >
                     {isApproving ? 'Approving...' : isApproved ? 'Approved' : 'Approve'}
                   </button>
-                  {approvalTx && (
-                    <a
-                      href={`https://testnet.purrsec.com/tx/${approvalTx}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-xs text-green-400 underline text-center"
-                    >
-                      View Tx
-                    </a>
-                  )}
                 </div>
                 <button
                   onClick={handleStake}
@@ -260,24 +262,6 @@ const Sepulchre = () => {
               </div>
             </div>
           </div>
-
-          {/* Transaction Status */}
-          {(txHash || approvalTx) && (
-            <div className="mt-8 text-center space-y-4">
-              {approvalTx && (
-                <div className="glass p-4 inline-block">
-                  <div className="text-green-400 font-nav mb-2">Approval Transaction</div>
-                  <div className="font-data text-sm opacity-70 break-all">{approvalTx}</div>
-                </div>
-              )}
-              {txHash && (
-                <div className="glass p-4 inline-block">
-                  <div className="text-green-400 font-nav mb-2">Stake Transaction</div>
-                  <div className="font-data text-sm opacity-70 break-all">{txHash}</div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

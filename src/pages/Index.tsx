@@ -7,6 +7,8 @@ import { ExternalLink } from 'lucide-react';
 
 const Index = () => {
   const hero = useScrollAnimation();
+  const stats = useScrollAnimation();
+  const activity = useScrollAnimation();
   const cta = useScrollAnimation();
   const links = useScrollAnimation();
 

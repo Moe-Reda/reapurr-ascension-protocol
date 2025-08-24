@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import StatsDashboard from '../components/StatsDashboard';
 import { useAccount } from 'wagmi';
-import { useGenesisPoolUserInfo, useGenesisPoolPendingSCT, useGenesisPoolInfo, useTokenBalance } from '../hooks/useContracts';
+import { useOptimizedPoolData, OptimizedPoolData } from '../hooks/useOptimizedPoolData';
 import { CONTRACT_ADDRESSES } from '../lib/contracts';
+import { formatTVL } from '../lib/utils';
 import { stakeInPool, unstakeFromPool, claimRewards, getContractActions } from '../lib/contractActions';
 
 const Awakening = () => {
@@ -15,111 +16,209 @@ const Awakening = () => {
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
   const [stakeAmount, setStakeAmount] = useState('');
   const [isStakeModal, setIsStakeModal] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const contractActions = getContractActions();
   const [isApproved, setIsApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalTx, setApprovalTx] = useState<string | null>(null);
+  const [isProcessingStake, setIsProcessingStake] = useState(false);
+  const [stakeTxHash, setStakeTxHash] = useState<string | null>(null);
+  const [localPoolData, setLocalPoolData] = useState<OptimizedPoolData[]>([]);
+  const hasInitialized = React.useRef(false);
 
-  // Genesis pool addresses - you'll need to update these with actual addresses
-  const genesisPools = [
-    {
-      id: 'sct-hype',
-      asset: 'SCT/HYPE',
-      poolAddress: CONTRACT_ADDRESSES.SCTGenesisRewardPool, // Update with actual address
-      tokenAddress: CONTRACT_ADDRESSES.SCTHYPE, // Update with actual LP token address
-      pid: 0, // SCT-HYPE pool is at pid 0 according to the contract
-      tokenImage: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=64&h=64&fit=crop&crop=center',
-    },
-    {
-      id: 'hype',
-      asset: 'HYPE',
-      poolAddress: '0x...', // Add actual HYPE pool address
-      tokenAddress: '0x...', // Add actual HYPE token address
-      pid: 3, // HYPE pool is at pid 3 according to the contract
-      tokenImage: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=64&h=64&fit=crop&crop=center',
-    },
-    {
-      id: 'purr',
-      asset: 'PURR',
-      poolAddress: CONTRACT_ADDRESSES.SCTGenesisRewardPool, // Same pool contract
-      tokenAddress: CONTRACT_ADDRESSES.PURR, // PURR token address
-      pid: 1, // PURR pool is at pid 1
-      tokenImage: 'https://placekitten.com/64/64', // Placeholder image
-    },
-    // Add more pools with actual addresses
-  ];
+  // Use optimized pool data hook
+  const { pools: poolData, isLoading: poolsLoading, error: poolsError, isVisible, isPolling } = useOptimizedPoolData();
+  
+  // Contract actions instance
+  const contractActions = getContractActions();
 
-  // Fetch real data for each pool
-  const poolData = genesisPools.map(pool => {
-    const userInfo = useGenesisPoolUserInfo(pool.poolAddress, pool.pid, userAddress);
-    const pendingSCT = useGenesisPoolPendingSCT(pool.poolAddress, pool.pid, userAddress);
-    const poolInfo = useGenesisPoolInfo(pool.poolAddress, pool.pid);
-    const tokenBalance = useTokenBalance(pool.tokenAddress, userAddress);
+  // Fast polling when modal is open (every 3 seconds)
+  React.useEffect(() => {
+    if (!selectedPool) return;
+    
+    const fastInterval = setInterval(() => {
+      // Trigger a refetch of all pool data
+      // This will be handled by the useOptimizedPoolData hook
+    }, 3000);
+    
+    return () => clearInterval(fastInterval);
+  }, [selectedPool]);
 
-    return {
-      ...pool,
-      userStake: userInfo.data && userInfo.data[0] ? Number(userInfo.data[0]) / 1e18 : 0,
-      earned: pendingSCT.data ? Number(pendingSCT.data) / 1e18 : 0,
-      totalStaked: poolInfo.data && poolInfo.data[0] ? Number(poolInfo.data[0]) / 1e18 : 0, // This might need adjustment based on poolInfo structure
-      tokenBalance: tokenBalance.data ? Number(tokenBalance.data) / 1e18 : 0,
-      isLoading: userInfo.isLoading || pendingSCT.isLoading || poolInfo.isLoading || tokenBalance.isLoading,
-    };
-  });
+  // Reset approval state when modal opens/closes or pool/amount changes
+  React.useEffect(() => {
+    setIsApproved(false);
+    setApprovalTx(null);
+  }, [selectedPool, stakeAmount]);
+
+  // Initialize local pool data once
+  React.useEffect(() => {
+    if (poolData && poolData.length > 0 && !hasInitialized.current) {
+      setLocalPoolData([...poolData]);
+      hasInitialized.current = true;
+    }
+  }, [poolData]);
+
+  // Check if required contract addresses are available
+  if (!CONTRACT_ADDRESSES.SCTGenesisRewardPool) {
+    return (
+      <div className="min-h-screen pt-24 pb-12 page-enter">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-hero tracking-tighter mb-6">
+              The <span className="text-green-400">Awakening</span>
+            </h1>
+            <div className="glass p-8">
+              <p className="text-xl font-nav text-red-400">
+                Error: SCT Genesis Reward Pool address not configured
+              </p>
+              <p className="text-sm opacity-60 mt-2">
+                Please check your environment variables
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Helper function to format TVL from wei to human readable
+  const formatTVLFromWei = (tvlWei: bigint | undefined): string => {
+    if (!tvlWei) return '0';
+    const tvlNumber = Number(tvlWei) / 1e18;
+    return tvlNumber.toLocaleString(undefined, { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 2 
+    });
+  };
+
+  // Function to update local pool data immediately after transactions
+  const updateLocalPoolData = (poolAsset: string, updates: Partial<OptimizedPoolData>) => {
+    setLocalPoolData(prevData => 
+      prevData.map(pool => 
+        pool.asset === poolAsset 
+          ? { ...pool, ...updates }
+          : pool
+      )
+    );
+  };
 
   const handleStakeAction = async () => {
     if (!selectedPool || !stakeAmount || !userAddress) return;
     
-    setIsLoading(true);
+    setIsProcessingStake(true);
     try {
-      const pool = genesisPools.find(p => p.asset === selectedPool);
+      const pool = poolData.find(p => p.asset === selectedPool);
       if (!pool) return;
 
       if (isStakeModal) {
-        await stakeInPool(pool.poolAddress, pool.pid, stakeAmount);
+        // Stake operation
+        const tx = await stakeInPool(pool.poolAddress, pool.pid, stakeAmount);
+        setStakeTxHash(tx.hash);
+        const receipt = await tx.wait();
+        
+        if (receipt.status === 1) {
+          console.log('Stake successful, updating local data...');
+          const stakeAmountNum = parseFloat(stakeAmount);
+          const currentPool = localPoolData.find(p => p.asset === selectedPool);
+          
+          if (currentPool) {
+            // Update user stake immediately
+            updateLocalPoolData(selectedPool, {
+              userStake: currentPool.userStake + stakeAmountNum
+            });
+          }
+          
+          // Trigger immediate refetch of all pool data
+          // This will be handled by the useOptimizedPoolData hook's event listeners
+        }
       } else {
-        await unstakeFromPool(pool.poolAddress, pool.pid, stakeAmount);
+        // Unstake operation
+        const tx = await unstakeFromPool(pool.poolAddress, pool.pid, stakeAmount);
+        setStakeTxHash(tx.hash);
+        const receipt = await tx.wait();
+        
+        if (receipt.status === 1) {
+          console.log('Unstake successful, updating local data...');
+          const unstakeAmountNum = parseFloat(stakeAmount);
+          const currentPool = localPoolData.find(p => p.asset === selectedPool);
+          
+          if (currentPool) {
+            // Update user stake immediately
+            updateLocalPoolData(selectedPool, {
+              userStake: Math.max(0, currentPool.userStake - unstakeAmountNum)
+            });
+          }
+          
+          // Trigger immediate refetch of all pool data
+          // This will be handled by the useOptimizedPoolData hook's event listeners
+        }
       }
       
+      // Reset modal state
       setSelectedPool(null);
       setStakeAmount('');
+      setIsApproved(false);
+      setApprovalTx(null);
+      setStakeTxHash(null);
+      
     } catch (error) {
       console.error('Stake action failed:', error);
     } finally {
-      setIsLoading(false);
+      setIsProcessingStake(false);
     }
   };
 
   const handleClaim = async (poolAddress: string, pid: number) => {
     if (!userAddress) return;
     
-    setIsLoading(true);
     try {
-      await claimRewards(poolAddress, pid);
+      const tx = await claimRewards(poolAddress, pid);
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        console.log('Claim successful, updating local data...');
+        // Find the pool by poolAddress and pid
+        const poolToUpdate = localPoolData.find(p => 
+          p.poolAddress === poolAddress && p.pid === pid
+        );
+        
+        if (poolToUpdate) {
+          // Reset earned rewards to 0 immediately
+          updateLocalPoolData(poolToUpdate.asset, {
+            earned: 0
+          });
+        }
+        
+        // Trigger immediate refetch of all pool data
+        // This will be handled by the useOptimizedPoolData hook's event listeners
+      }
     } catch (error) {
       console.error('Claim failed:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Approve handler
   const handleApprove = async () => {
     if (!selectedPool || !stakeAmount || !userAddress) return;
+    
     setIsApproving(true);
     try {
-      const pool = genesisPools.find(p => p.asset === selectedPool);
+      const pool = poolData.find(p => p.asset === selectedPool);
       if (!pool || !pool.tokenAddress || !pool.poolAddress) {
-        throw new Error('Pool or addresses not set ' + pool.tokenAddress + ' ' + pool.poolAddress);
+        throw new Error('Pool or addresses not set');
       }
+      
       const tx = await contractActions.approveToken(
         pool.tokenAddress,
         pool.poolAddress,
-        stakeAmount
+        '999999999' // Approve max amount
       );
+      
       setApprovalTx(tx.hash);
-      await tx.wait();
-      setIsApproved(true);
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        setIsApproved(true);
+      }
+      
     } catch (error) {
       console.error('Approval failed:', error);
     } finally {
@@ -127,11 +226,8 @@ const Awakening = () => {
     }
   };
 
-  // Reset approval state when modal opens/closes or pool/amount changes
-  React.useEffect(() => {
-    setIsApproved(false);
-    setApprovalTx(null);
-  }, [selectedPool, stakeAmount]);
+  // Check if any operations are in progress
+  const isLoading = poolsLoading;
 
   return (
     <div className="min-h-screen pt-24 pb-12 page-enter">
@@ -165,53 +261,56 @@ const Awakening = () => {
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {poolData.map((pool) => (
-              <div key={pool.id} className="glass p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <img 
-                      src={pool.tokenImage} 
+              <div key={pool.id} className="glass p-4 md:p-6 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={pool.tokenImage}
                       alt={pool.asset}
-                      className="w-8 h-8 rounded-full"
+                      className="w-7 h-7 md:w-8 md:h-8 rounded-full"
                     />
-                    <h3 className="text-2xl font-nav text-green-400">{pool.asset}</h3>
+                    <h3 className="text-xl md:text-lg font-nav text-green-400">
+                      {pool.asset}
+                    </h3>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-data">
-                      {pool.isLoading ? '...' : 'APR'}%
+                  <div className="text-right shrink-0 pl-3 md:pl-6">
+                    <div className="text-lg md:text-lg font-data leading-none">
+                      {pool.isLoading ? '...' : pool.apr > 0 ? pool.apr.toFixed(2) : '0.00'}%
                     </div>
-                    <div className="text-sm opacity-60 font-nav">APR</div>
+                    <div className="text-xs md:text-sm opacity-60 font-nav">APR</div>
                   </div>
                 </div>
-                
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between">
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between min-w-0">
                     <span className="opacity-70 font-nav">TVL</span>
-                    <span className="font-data">
-                      {pool.isLoading ? '...' : `$${(pool.totalStaked * 1.5).toLocaleString()}`}
+                    <span className="font-data whitespace-nowrap truncate">
+                      {formatTVL(pool.usdTVL, pool.isLoading)}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between min-w-0">
                     <span className="opacity-70 font-nav">Your Stake</span>
-                    <span className="font-data">
+                    <span className="font-data whitespace-nowrap truncate">
                       {pool.isLoading ? '...' : `${pool.userStake.toFixed(2)} ${pool.asset}`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between min-w-0">
                     <span className="opacity-70 font-nav">Earned</span>
-                    <span className="text-green-400 font-data">
+                    <span className="text-green-400 font-data whitespace-nowrap truncate">
                       {pool.isLoading ? '...' : `${pool.earned.toFixed(4)} SCT`}
                     </span>
                   </div>
                 </div>
-                
-                <div className="flex gap-2">
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   <button
                     onClick={() => {
                       setSelectedPool(pool.asset);
                       setIsStakeModal(true);
+                      setStakeAmount('');
                     }}
                     disabled={!userAddress || pool.isLoading}
-                    className="flex-1 neo-button text-center text-sm font-nav disabled:opacity-50"
+                    className="neo-button text-center text-xs md:text-sm py-2 font-nav disabled:opacity-50"
                   >
                     Stake
                   </button>
@@ -219,16 +318,17 @@ const Awakening = () => {
                     onClick={() => {
                       setSelectedPool(pool.asset);
                       setIsStakeModal(false);
+                      setStakeAmount('');
                     }}
                     disabled={!userAddress || pool.isLoading}
-                    className="flex-1 neo-button text-center opacity-80 text-sm font-nav disabled:opacity-50"
+                    className="neo-button flex items-center justify-center text-center opacity-80 text-xs md:text-sm py-2 font-nav disabled:opacity-50"
                   >
                     Unstake
                   </button>
                   <button
                     onClick={() => handleClaim(pool.poolAddress, pool.pid)}
                     disabled={!userAddress || pool.isLoading || pool.earned <= 0}
-                    className="flex-1 neo-button text-center text-sm font-nav disabled:opacity-50"
+                    className="neo-button text-center text-xs md:text-sm py-2 font-nav disabled:opacity-50 md:col-auto col-span-2"
                   >
                     Claim
                   </button>
@@ -243,9 +343,26 @@ const Awakening = () => {
       {selectedPool && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
           <div className="glass p-8 max-w-md w-full">
-            <h3 className="text-2xl font-hero mb-6 text-center">
-              {isStakeModal ? 'Stake' : 'Unstake'} {selectedPool}
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex-1"></div>
+              <h3 className="text-2xl font-hero text-center flex-1">
+                {isStakeModal ? 'Stake' : 'Unstake'} {selectedPool}
+              </h3>
+              <div className="flex-1 flex justify-end">
+                {(isApproved && approvalTx) || stakeTxHash ? (
+                  <a
+                    href={`https://testnet.purrsec.com/tx/${stakeTxHash || approvalTx}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-green-400 underline"
+                  >
+                    View Tx
+                  </a>
+                ) : (
+                  <div className="w-16"></div>
+                )}
+              </div>
+            </div>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -263,38 +380,46 @@ const Awakening = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={handleApprove}
-                    disabled={isApproving || isApproved || !stakeAmount}
+                    disabled={isApproving || isApproved || !stakeAmount || isLoading}
                     className="flex-1 neo-button text-center font-nav disabled:opacity-50"
                   >
-                    {isApproving ? 'Approving...' : isApproved ? 'Approved' : 'Approve'}
+                    {isApproving ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Approving...
+                      </div>
+                    ) : isApproved ? 'Approved' : 'Approve'}
                   </button>
-                  {approvalTx && (
-                    <a
-                      href={`https://testnet.purrsec.com/tx/${approvalTx}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-xs text-green-400 underline text-center"
-                    >
-                      View Tx
-                    </a>
-                  )}
                 </div>
               )}
             </div>
+            
+
+            
             <div className="flex gap-3">
               <button
-                onClick={() => setSelectedPool(null)}
+                onClick={() => {
+                  setSelectedPool(null);
+                  setStakeAmount('');
+                }}
                 disabled={isLoading || isApproving}
-                className="flex-1 neo-button opacity-60 text-center font-nav disabled:opacity-50"
+                className="flex-1 neo-button text-center font-nav disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleStakeAction}
-                disabled={!stakeAmount || isLoading || (isStakeModal && !isApproved)}
+                disabled={!stakeAmount || isProcessingStake || (isStakeModal && !isApproved)}
                 className="flex-1 neo-button text-center font-nav disabled:opacity-50"
               >
-                {isLoading ? 'Processing...' : (isStakeModal ? 'Stake' : 'Unstake')}
+                {isProcessingStake ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  isStakeModal ? 'Stake' : 'Unstake'
+                )}
               </button>
             </div>
           </div>

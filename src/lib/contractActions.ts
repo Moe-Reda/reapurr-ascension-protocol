@@ -91,9 +91,6 @@ export class ContractActions {
     const contract = new ethers.Contract(CONTRACT_ADDRESSES.TreasuryV2, CONTRACT_ABIS.TreasuryV2, this.signer);
     const parsedAmount = parseEther(amount);
     const parsedMaxPrice = ethers.BigNumber.from(maxPrice);
-
-    console.log('parsedAmount', parsedAmount.toString());
-    console.log('parsedMaxPrice', parsedMaxPrice.toString());
     
     return await contract.buyBonds(parsedAmount, parsedMaxPrice);
   }
