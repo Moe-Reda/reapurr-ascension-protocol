@@ -162,6 +162,12 @@ export const CONTRACT_ABIS = {
     'function setOperator(address)',
     'function setDevFund(address)',
     'function governanceRecoverUnsupported(address,uint256,address)',
+    
+    // Events
+    'event Deposit(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event Withdraw(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event RewardPaid(address indexed user, uint256 amount)',
   ]),
 
   // GSCT Reward Pool ABI
@@ -198,6 +204,12 @@ export const CONTRACT_ABIS = {
     'function setOperator(address)',
     'function setDevFund(address)',
     'function governanceRecoverUnsupported(address,uint256,address)',
+    
+    // Events
+    'event Deposit(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event Withdraw(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount)',
+    'event RewardPaid(address indexed user, uint256 amount)',
   ]),
 } as const;
 

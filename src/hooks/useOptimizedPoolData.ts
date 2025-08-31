@@ -221,6 +221,7 @@ export const useOptimizedPoolData = () => {
     isVisible,
     isPolling,
     totalTVL: poolUSDData.reduce((sum, pool) => sum + (pool.tvlUSD || 0), 0),
+    refetchAll,
   };
 };
 

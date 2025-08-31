@@ -1,5 +1,5 @@
-import { useMemo, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useAccount, usePublicClient, useBlockNumber } from 'wagmi';
 import { 
   useGSCTPoolUserInfo, 
   useGSCTPoolPendingShare, 
@@ -10,7 +10,7 @@ import {
 import { useGSCTPoolByPid } from './useSubgraph';
 import { useRealGSCTUSDTVL } from './useRealGSCTUSDTVL';
 import { useVisibilityAwarePolling } from './useVisibilityAwarePolling';
-import { CONTRACT_ADDRESSES } from '../lib/contracts';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../lib/contracts';
 
 export interface OptimizedGSCTPoolData {
   id: string;
@@ -51,6 +51,8 @@ const GSCT_POOLS = [
 
 export const useOptimizedGSCTPoolData = () => {
   const { address: userAddress } = useAccount();
+  const lastRefetchRef = useRef(0);
+  const publicClient = usePublicClient();
 
   // Get real USD TVL data for all GSCT pools
   const { pools: poolUSDData } = useRealGSCTUSDTVL(CONTRACT_ADDRESSES.GSCTRewardPool);
@@ -121,7 +123,7 @@ export const useOptimizedGSCTPoolData = () => {
         lpTokenBalance,
         apr,
         isLoading,
-        error: userInfo.error || pendingRewards.error || aprData.error || lpBalance.error,
+        error: userInfo.error?.message || pendingRewards.error?.message || lpBalance.error?.message,
       };
     });
   }, [
@@ -131,6 +133,20 @@ export const useOptimizedGSCTPoolData = () => {
     lpBalanceQueries,
     poolUSDData,
   ]);
+
+  // Create refetch function with debouncing
+  const refetchAll = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefetchRef.current < 1000) return; // Debounce refetches
+    lastRefetchRef.current = now;
+    
+    console.log('🔄 [GSCT Pool Hook] Refetching all data due to blockchain event');
+    
+    // Force refetch of all queries
+    userInfoQueries.forEach(query => query.refetch?.());
+    pendingRewardsQueries.forEach(query => query.refetch?.());
+    lpBalanceQueries.forEach(query => query.refetch?.());
+  }, [userInfoQueries, pendingRewardsQueries, lpBalanceQueries]);
 
   // Use visibility-aware polling to refresh data
   const refreshData = useCallback(() => {
@@ -144,6 +160,68 @@ export const useOptimizedGSCTPoolData = () => {
     immediate: false, // Don't execute immediately to avoid double fetching
   });
 
+  // Add blockchain event listeners for automatic data refreshing
+  useEffect(() => {
+    if (!CONTRACT_ADDRESSES.GSCTRewardPool || !publicClient) {
+      console.log('⚠️ [GSCT Pool Hook] Missing contract address or public client for event listeners');
+      return;
+    }
+
+    console.log('👂 [GSCT Pool Hook] Setting up blockchain event listeners for:', CONTRACT_ADDRESSES.GSCTRewardPool);
+
+    const unwatch = publicClient.watchContractEvent({
+      address: CONTRACT_ADDRESSES.GSCTRewardPool as `0x${string}`,
+      abi: CONTRACT_ABIS.GSCTRewardPool,
+      eventName: 'Deposit',
+      onLogs: (logs) => {
+        console.log('📈 [GSCT Pool Hook] Deposit event detected:', logs);
+        refetchAll();
+      },
+    });
+
+    const unwatch2 = publicClient.watchContractEvent({
+      address: CONTRACT_ADDRESSES.GSCTRewardPool as `0x${string}`,
+      abi: CONTRACT_ABIS.GSCTRewardPool,
+      eventName: 'Withdraw',
+      onLogs: (logs) => {
+        console.log('📉 [GSCT Pool Hook] Withdraw event detected:', logs);
+        refetchAll();
+      },
+    });
+
+    const unwatch3 = publicClient.watchContractEvent({
+      address: CONTRACT_ADDRESSES.GSCTRewardPool as `0x${string}`,
+      abi: CONTRACT_ABIS.GSCTRewardPool,
+      eventName: 'RewardPaid',
+      onLogs: (logs) => {
+        console.log('💰 [GSCT Pool Hook] RewardPaid event detected:', logs);
+        refetchAll();
+      },
+    });
+
+    return () => {
+      console.log('🧹 [GSCT Pool Hook] Cleaning up event listeners');
+      unwatch?.();
+      unwatch2?.();
+      unwatch3?.();
+    };
+  }, [publicClient, refetchAll]);
+
+  // Watch for new blocks and refetch data (throttled to every 5 seconds)
+  const { data: blockNumber } = useBlockNumber({ watch: true });
+  
+  // Refetch on new blocks (throttled to every 5 seconds)
+  useMemo(() => {
+    if (blockNumber && document.visibilityState === 'visible') {
+      const now = Date.now();
+      if (now - lastRefetchRef.current > 5000) {
+        lastRefetchRef.current = now;
+        console.log('🔄 [GSCT Pool Hook] Refetching due to new block:', blockNumber);
+        refetchAll();
+      }
+    }
+  }, [blockNumber, refetchAll]);
+
   return {
     pools: optimizedPoolData,
     isLoading: poolUSDData.some(pool => pool.isLoading),
@@ -151,5 +229,6 @@ export const useOptimizedGSCTPoolData = () => {
     isVisible,
     isPolling,
     totalTVL: poolUSDData.reduce((sum, pool) => sum + (pool.totalPoolTVL || 0), 0),
+    refetchAll,
   };
 };

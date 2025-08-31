@@ -38,7 +38,11 @@ const StatsDashboard = () => {
     });
   };
 
-  if (loading) {
+  // Check if we have any data available
+  const hasAnyData = totalTVLUSD > 0 || dailyEmissions > 0 || timeLeft || activePools > 0;
+
+  // Only show full loading state if we have no data at all
+  if (loading && !hasAnyData) {
     return (
       <div className="glass p-8 mb-16">
         <div className="flex justify-center">

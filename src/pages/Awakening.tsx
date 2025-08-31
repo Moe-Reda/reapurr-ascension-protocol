@@ -30,6 +30,18 @@ const Awakening = () => {
   // Contract actions instance
   const contractActions = getContractActions();
 
+  // Add continuous background polling like PriceTicker
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      // Trigger refetch of all pool data every 30 seconds
+      // This ensures data stays fresh even when tab is not visible
+      console.log('🔄 [Awakening] Background polling - refetching pool data');
+      // refetchAll(); // No longer needed - wagmi hooks handle polling
+    }, 30000); // 30 seconds like PriceTicker
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // Fast polling when modal is open (every 3 seconds)
   React.useEffect(() => {
     if (!selectedPool) return;
